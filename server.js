@@ -220,7 +220,7 @@ Output ONLY the category name. Do not add any explanation.`
     pdf = (await import('pdf-parse')).default;
     pdfjsLib = await import('pdfjs-dist/legacy/build/pdf.mjs');
     
-    app.listen(port, () => {
+    app.listen(port, '0.0.0.0', () => {
         console.log(`Backend server running on port ${port}`);
         console.log(`AI Model: xAI Grok Beta (Free)`);
         console.log(`Text extraction: Using pdfjs-dist for page-by-page extraction`);
