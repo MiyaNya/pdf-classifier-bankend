@@ -224,14 +224,18 @@ Output ONLY the category name. Do not add any explanation.`
     }
 });
 
-// เริ่มต้น server หลังจากโหลด pdf-parse และ pdfjs
-(async () => {
-    pdf = (await import('pdf-parse')).default;
-    pdfjsLib = await import('pdfjs-dist/legacy/build/pdf.mjs');
+// เริ่ม server ก่อน แล้วค่อยโหลด modules (เพื่อให้ health check ผ่าน)
+app.listen(port, '0.0.0.0', async () => {
+    console.log(`Backend server running on port ${port}`);
     
-    app.listen(port, '0.0.0.0', () => {
-        console.log(`Backend server running on port ${port}`);
+    // โหลด modules หลัง server เริ่มแล้ว
+    try {
+        pdf = (await import('pdf-parse')).default;
+        pdfjsLib = await import('pdfjs-dist/legacy/build/pdf.mjs');
         console.log(`AI Model: xAI Grok Beta (Free)`);
         console.log(`Text extraction: Using pdfjs-dist for page-by-page extraction`);
-    });
-})();
+        console.log(`Server ready to process requests!`);
+    } catch (err) {
+        console.error('Error loading modules:', err);
+    }
+});
