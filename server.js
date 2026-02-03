@@ -17,6 +17,15 @@ const port = process.env.PORT || 5000;
 app.use(cors());
 app.use(express.json());
 
+// Health Check Endpoint สำหรับ Railway
+app.get('/', (req, res) => {
+    res.json({ status: 'ok', message: 'PDF Classifier Backend is running!' });
+});
+
+app.get('/health', (req, res) => {
+    res.json({ status: 'ok' });
+});
+
 // ตั้งค่าการอัปโหลดไฟล์ด้วย Multer (เก็บใน RAM ชั่วคราว) - รองรับหลายไฟล์
 const storage = multer.memoryStorage();
 const upload = multer({ 
