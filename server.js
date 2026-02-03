@@ -80,6 +80,19 @@ function findAbstractPages(pageTexts) {
     return abstractPages;
 }
 
+// ฟังก์ชันแปลง model name ที่รับจาก frontend ไปเป็น model ID ของ OpenRouter
+function getModelConfig(modelName) {
+    const modelConfigs = {
+        'Nvidia-AI': {
+            id: 'nvidia/nemotron-3-nano-30b-a3b:free',
+            name: 'Nvidia Nemotron 3 Nano 30B A3B',
+            temperature: 0.1
+        },
+    };
+    
+    return modelConfigs[modelName] || modelConfigs['Nvidia-AI'];
+}
+
 // --- API Endpoint สำหรับการจำแนกเอกสาร (รองรับหลายไฟล์) ---
 app.post('/api/classify', upload.array('pdfFiles', 20), async (req, res) => {
     try {
@@ -87,7 +100,11 @@ app.post('/api/classify', upload.array('pdfFiles', 20), async (req, res) => {
             return res.status(400).json({ error: 'กรุณาอัปโหลดไฟล์ PDF อย่างน้อย 1 ไฟล์' });
         }
 
-        console.log(`Processing ${req.files.length} file(s)...`);
+        // รับ model ที่เลือกจาก frontend
+        const selectedModel = req.body.model || 'deepseek';
+        const modelConfig = getModelConfig(selectedModel);
+        
+        console.log(`Processing ${req.files.length} file(s) with ${modelConfig.name}...`);
         
         const results = [];
 
@@ -133,7 +150,7 @@ app.post('/api/classify', upload.array('pdfFiles', 20), async (req, res) => {
                 console.log("  - Sending to xAI Grok...");
 
                 // 3. ส่งไปยัง xAI Grok API
-                const categories = ['Web-app', 'Other', 'Mobile-app', 'Image-Processing', 'Hardware'];
+                const categories = ['Web-application', 'Mobile-application', 'Hardware/IoT & Network', 'Digital Image Processing', 'Other'];
                 
                 const completion = await openrouter.chat.completions.create({
                     messages: [
@@ -142,10 +159,10 @@ app.post('/api/classify', upload.array('pdfFiles', 20), async (req, res) => {
                             content: `You are an expert document classifier for university senior projects. Your task is to analyze the provided abstract text from a Thai university thesis and categorize it into ONLY ONE of the following categories: ${categories.join(', ')}. 
 
 Guidelines:
-- Web-app: Projects involving web applications, websites, web services, APIs
-- Mobile-app: Projects involving iOS, Android, mobile applications
-- Image-Processing: Projects involving computer vision, image analysis, OCR, face recognition
-- Hardware: Projects involving IoT, embedded systems, robotics, Arduino, sensors
+- Web-application: Projects involving web applications, websites, web services, APIs, web development
+- Mobile-application: Projects involving iOS, Android, mobile applications, mobile development
+- Hardware/IoT & Network: Projects involving IoT, embedded systems, robotics, Arduino, sensors, networking, network infrastructure
+- Digital Image Processing: Projects involving computer vision, image analysis, image processing, OCR, face recognition, pattern recognition
 - Other: Projects that don't fit the above categories
 
 Output ONLY the category name. Do not add any explanation.`
@@ -155,8 +172,8 @@ Output ONLY the category name. Do not add any explanation.`
                             content: `Here is the document abstract:\n\n${truncatedText}`
                         }
                     ],
-                    model: "x-ai/grok-4.1-fast:free",
-                    temperature: 0.1
+                    model: modelConfig.id,
+                    temperature: modelConfig.temperature
                 });
 
                 const category = completion.choices[0].message.content.trim();
